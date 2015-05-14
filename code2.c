@@ -20,10 +20,10 @@ void write_Force(int, int, double **, FILE *);
 
 /*STATIC VARIABLES */
 
-const double kB = 1.3806488E-23;	 // Boltzman Constat 
+const double kB = 1.3806488E-23;	 // Boltzman Constat, Units: m^2 kg s^-2 K^-1 (or J K^-1)
 const double mass = 6.626E-26;		 // Mass of Ar or any Lennard-Jones Liquid,Units in kg per each atom
-const double eps = 0.210849;		 // Units of kcal/mol, it is a meassure of strength
-const double sigma = 3.345;		 // Sigma value for Ar or any Lennard-Jones Liquid, it is a measure of range of potential, Units of Angstrums
+const double eps = 0.210849;		 // Units of kcal.mol^-1
+const double sigma = 3.345;		 // Sigma value for Ar or any Lennard-Jones Liquid, Units of Angstrums
 
 /*MAIN CODE */
 
@@ -31,39 +31,39 @@ int main(){
 	int n_atoms;				// Number of atoms
 	double box;				// Size of the cubic box
 	double length;				// Length of cubic box
-	int n_iter;				// Number of MD iterations
+	int n_iter;				// Number of MD n_iterations
 	double temp;				// Temperature
 	int delta_write;			// How often to write coordinates and log file in MD n_iterations
-	double cutoff;				// cutoff distance (Angstrom)
-	double cutoff_squ;			// nonbonding interaction cutoff distance squared
+	double cutoff;			// cutoff distance (Angstrom)
+	double cutoff_squ;			// nonbonding interaction cutoff distance squared (Angstrom^2)
 
 	double kBT;				// Boltzman constant*Temperature Units of energy (J)
 	//double mass;				// Mass of a Lennard-Jones Liquid 
 	// double eps;				// Epsilon value in Lennard-Jones Potential expression
 	double **atom_vel;			// Velocity array	
 	//double sigma;				// Sigam Value for LJ liquid in Lennard-Jones Potential expression
-	double **coord;				// Particle coordinates array
+	double **coord;				// Particle array coordinates
 	int i,j,k;				// Generic indeces
 	int seed=1;				// Random seed for velocity initialization
 	
 
-	double sigma;				// sigma value
-	double sigma6;				// LJL sigma^6 value
+	double sigma;		// sigma value
+	double sigma6;		// LJL sigma^6 value
 
 	
-	double **forces_on_atom;		// Force acting on atom array fx, fy, fz
+	double **forces_on_atom;		// Force acting on atom array
 	
-	double Tff;				// Total LJ potential energy 
+	double Tff;	// Total LJ potential energy 
 	
-	double Kt_en;				// Total Kinetic Energy
-	double Tot_en;                  	// Total Energy
+	double Kt_en;		// Total Kinetic Energy
+	double Tot_en;                  // Total Energy
 
 
 
-	char log_FileName[1024];         	// Log file name
-	char vel_FileName[1024];         	// Velocity file name
-	char traj_FileName[1024];         	// Trajectoruy file name
-	char force_FileName[1024];         	// Force file name
+	char log_FileName[1024];         // Log file name
+	char vel_FileName[1024];         // Velocity file name
+	char traj_FileName[1024];         // Trajectoruy file name
+	char force_FileName[1024];         // Force file name
 
 
 
@@ -80,11 +80,10 @@ int main(){
 
 	cutoff_squ = cutoff*cutoff;
 	kBT = kB*temp;
-	printf("kB*T=%3.6E\n",kBT);
+	printf("kB*T=%f\n",kBT);
 
 	// allocate coordinate  and velocity arrays
 	coord = (double**) malloc(n_atoms*sizeof(double*));
-	
 	// allocate velocity array memory
 	atom_vel = (double**) calloc(n_atoms,sizeof(double*));   
 	
@@ -93,7 +92,7 @@ int main(){
 	  
 	for (i=0;i<n_atoms;i++) {
 		coord[i] = (double*) malloc(3*sizeof(double));
-		atom_vel[i] = (double*) malloc(3*sizeof(double));	// Does not complie wiht calloc???
+		atom_vel[i] = (double*) malloc(3*sizeof(double));
 		forces_on_atom[i] = (double*) malloc(3*sizeof(double));
 	}
 	// open log files
@@ -102,9 +101,9 @@ int main(){
 	velOut = fopen(vel_FileName,"w");
 	forceOut = fopen(force_FileName, "w");
 
-	// inintialize positions and velocities+ compute forces//
+	// inintialize positions and velocities
 
-	n_iter=0;		                 			// Number of iteration before MD loop
+	n_iter=0;		                 	// Number of n_iteration before MD loop
 	initPositions(coord, n_atoms, &box);
 	write_xyz(coord, n_atoms, n_iter, box, xyzOut);
 	computeForce_Energy(n_atoms, n_iter, delta_write, box, cutoff_squ, eps, sigma6, Tff, coord, forces_on_atom);
@@ -117,6 +116,8 @@ int main(){
 	fflush(velOut);
 	fflush(forceOut);
 	
+	// compute energy and  forces
+	computeForce_Energy(n_atoms, n_iter, delta_write, box, cutoff_squ, eps, sigma6, Tff, coord, forces_on_atom);
 
 
 	// start MD loops/n_iterations
@@ -176,20 +177,20 @@ void initPositions(double **coord, int n_atoms, double *box) {
 
 	double cbrt(double x);          // cube root function
 	int iBoxD;                      // integer box dimension
-	double fBoxD;                   // float box dimension
+	double fBoxD;                   // double box dimension
 	
 	int x, y, z;
 	double xPos, yPos, zPos;
 	int atomCount;
 
 	// determine how many bins to divide the box into
-	iBoxD = (int) cbrt((double) n_atoms);	// number of atoms should be an integer to the third power
+	iBoxD = (int) cbrt((double) n_atoms);
 	if (iBoxD*iBoxD*iBoxD < n_atoms) {
 		iBoxD++;
 	}
 
 	// determine the size of the bins
-	fBoxD = 3.55;        	// seems unitless since multipleied by (x+0.5) gives xPos but I think it gives dimmention to particles 
+	fBoxD = 3.55;        
 	*box = iBoxD*fBoxD;     // calculate dimension of the box
 
 	// add an atom to each created bin 
@@ -261,59 +262,57 @@ void initVelocities(int n_atoms, int seed, double mass, double kBT, double **ato
 
 void computeForce_Energy(int n_atoms, int n_iter, int delta_write, double box, double cutoff_squ, double eps, double sigma6, double Tff, double **coord, double **forces_on_atom) {
 
-	 
 	int atom1;
-        int atom2;
-        double r2;
-        double r2rev;
-        double r6rev;
-        double rev6sig6;
-        int j;
-        double element[3] = {0.0, 0.0, 0.0};
-        double ff;
+	int atom2;
+	double r2;
+	double r2rev;
+	double r6rev;
+	double r2rev_6;
+	int j;
+	double element[3] = {0.0, 0.0, 0.0};
 
-	Tff = 0.0;
 
+	double ff;
+
+	double sqrt(double x);
+
+//	Tff = 0.0;
 
 	for(atom1=0; atom1<n_atoms-1; atom1++){
-
-		for(atom2=atom1+1;atom2<n_atoms;atom2++){
-			r2=0.0;
-			
+		for(atom2=atom1+1;atom2<n_atoms;atom2++) {
+			r2 = 0;
+			r2rev = 0;
+			r6rev = 0;
 			for(j=0;j<3;j++) {
-
-				element[j]= coord[atom1][j]-coord[atom2][j];
-				if(element[j]<-box/2.0){
-					element[j]=element[j]+box;
-				} else if (element[j]>box/2.0) {
-					element[j]=element[j]-box;
+				element[j] = 0.0;
+				element[j] = coord[atom1][j] - coord[atom2][j];
+				if(element[j] < -box/2.0) {
+					element[j] += box;
+				} else if(element[j] > box/2.0) {
+					element[j] -= box;
 				}
-				r2+=element[j]*element[j];
-
+				r2 += element[j]*element[j]; 		
 			}
-//		printf("r2=%f", r2);
+			if(r2 < cutoff_squ) {
+				r2rev = 1.0/r2;
+				r6rev = r2rev*r2rev*r2rev;
+				r2rev_6 = sigma6*r6rev;
+				ff = 48*eps*r2rev*r2rev_6*(r2rev_6-0.5);
 		
-			if(r2<cutoff_squ) {
-				r2rev=1.0/r2;
-				r6rev=r2rev*r2rev*r2rev;
-				rev6sig6=sigma6*r6rev;
-				ff=48*eps*r2rev*rev6sig6*(rev6sig6-0.5);
-
-				for(j=0; j<3; j++) {
-					forces_on_atom[atom1][j]+= ff*element[j];	  // forces acting on atoms
-					forces_on_atom[atom2][j]+= -ff*element[j];
+				if(n_iter%delta_write==0) {
+					Tff += r2rev_6*(r2rev_6 - 1.0);
 				}
 			}
-
-			
 		}
 	}
+	
+	if(n_iter%delta_write==0) {
+		Tff = 4.0*eps*Tff;
+	}
 
-printf("ff=%f", ff);
 }
-// Sub: Integrations (Propagations)
 
-/* VERLET INTEGRATION STEP */
+// Sub: Integrations (Propagations)
 
 
 
