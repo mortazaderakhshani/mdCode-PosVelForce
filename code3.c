@@ -321,7 +321,7 @@ void initVelocities(int n_atoms, int seed, double mass, double kBT, double **ato
 
 	}
 
-
+}
 ////////////////////////////////////////////////////
 
 // Sub: Compute Energy and forces
@@ -382,7 +382,7 @@ void computeForce_Energy(int n_atoms, int n_iter, int delta_write, double box, d
 		}
 	}
 
-printf("ff=%f", ff);
+//printf("ff=%f", ff);
 }
 
 ////////////////////////////////////////////////////
@@ -461,7 +461,7 @@ void write_Force(int n_atoms, int n_iter, double **forces_on_atom, FILE *forceOu
 		fprintf(forceOut, "Ar%16.6E%16.6E%16.6E\n", forces_on_atom[atom][0], forces_on_atom[atom][1], forces_on_atom[atom][2]);
 	}
 }
-}
+
 ////////////////////////////////////////////////////
 //
 //
